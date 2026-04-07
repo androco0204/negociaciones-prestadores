@@ -341,7 +341,11 @@ function fillFilters(){
   const uniq=col=>[...new Set(raw.map(r=>String(r[col]||'')).filter(Boolean))].sort();
   const fill=(id,vals)=>{const s=document.getElementById(id);const cur=s.value;s.innerHTML='<option value="">Todos</option>'+vals.map(v=>`<option value="${v}">${v}</option>`).join('');if(cur)s.value=cur;};
   fill('f-regional',uniq(I.REG));fill('f-estado',uniq(I.EST26));
-  fill('f-tipo',uniq(I.TIP));fill('f-resp',uniq(I.RES26));fill('f-mes',uniq(I.MLEG26));
+  fill('f-tipo',uniq(I.TIP));fill('f-resp',uniq(I.RES26));
+  // Mes: construir opciones con nombre a partir de número
+  const mesesConDatos=[...new Set(raw.map(r=>Number(r[I.MLEG26])||null).filter(n=>n&&n>=1&&n<=12))].sort((a,b)=>a-b);
+  const selMes=document.getElementById('f-mes');
+  selMes.innerHTML='<option value="">Todos</option>'+mesesConDatos.map(n=>`<option value="${n}">${MES[n-1]} 2026</option>`).join('');
 }
 
 function resetFilters(){['f-regional','f-estado','f-tipo','f-resp','f-mes'].forEach(id=>document.getElementById(id).value='');document.getElementById('f-search').value='';applyFilters();}
@@ -359,7 +363,7 @@ function applyFilters(){
     if(est&&String(r[I.EST26]||'')!==est)return false;
     if(tipo&&String(r[I.TIP]||'')!==tipo)return false;
     if(resp&&String(r[I.RES26]||'')!==resp)return false;
-    if(mes&&String(r[I.MLEG26]||'')!==mes)return false;
+    if(mes&&Number(r[I.MLEG26])!==Number(mes))return false;
     if(q&&!String(r[I.NOM]||'').toLowerCase().includes(q)&&!String(r[I.NIT]||'').includes(q))return false;
     return true;
   });
@@ -437,14 +441,28 @@ function srt(k){if(sortK===k)sortD*=-1;else{sortK=k;sortD=-1;}renderPrior();}
 
 function renderCal(){
   const grid=document.getElementById('calGrid');grid.innerHTML='';
+  // Solo mostrar meses que tienen prestadores asignados
+  let hayDatos=false;
   MES.forEach((m,i)=>{
-    const num=String(i+1).padStart(2,'0');
-    const pr=filt.filter(r=>{const mv=String(r[I.MLEG26]||'');return mv.startsWith(num)||mv.toLowerCase().startsWith(m.toLowerCase());});
+    const mesNum=i+1; // 1-12
+    const pr=filt.filter(r=>{
+      const mv=r[I.MLEG26];
+      if(!mv||mv==='')return false;
+      return Number(mv)===mesNum;
+    });
+    if(pr.length===0)return; // no mostrar meses vacíos
+    hayDatos=true;
     const sc=pr.map(r=>({r,s:score(r)})).sort((a,b)=>b.s-a.s);
-    const dots=sc.slice(0,8).map(({r,s})=>`<div class="cal-dot ${scol(s)}" title="${r[I.NOM]}" onclick="openDrawer(${raw.indexOf(r)})">${s}</div>`).join('');
+    const dots=sc.slice(0,8).map(({r,s})=>`<div class="cal-dot ${scol(s)}" title="${r[I.NOM]} — Score: ${s}" onclick="openDrawer(${raw.indexOf(r)})">${s}</div>`).join('');
     const mas=sc.length>8?`<div class="cal-more">+${sc.length-8} más</div>`:'';
-    grid.innerHTML+=`<div class="cal-month"><div class="cal-month-name">${m} <span style="color:var(--text3);font-weight:400">(${sc.length})</span></div><div class="cal-dots">${dots}${sc.length===0?'<div class="cal-empty">Sin asignar</div>':''}${mas}</div></div>`;
+    grid.innerHTML+=`<div class="cal-month">
+      <div class="cal-month-name">${m} 2026 <span style="color:var(--text3);font-weight:400">(${sc.length})</span></div>
+      <div class="cal-dots">${dots}${mas}</div>
+    </div>`;
   });
+  if(!hayDatos){
+    grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3);font-size:13px">Sin prestadores con mes de legalización asignado para los filtros actuales</div>';
+  }
 }
 
 function renderAlertas(){
@@ -496,7 +514,7 @@ function openDrawer(idx){
       ${r[I.OB25]?`<div class="drawer-obs">${String(r[I.OB25]).replace(/\n/g,'<br>')}</div>`:''}</div>
     <div class="drawer-section"><div class="drawer-section-title">Tarifas 2026</div>
       ${dr('Estado',ebadge(r[I.EST26]))}${dr('Responsable',r[I.RES26])}
-      ${dr('Mes legalización',r[I.MLEG26])}
+      ${dr('Mes legalización',r[I.MLEG26]&&Number(r[I.MLEG26])>=1?MES[Number(r[I.MLEG26])-1]+' 2026':'—')}
       ${dr('Incremento global',r[I.INC26]?(Number(r[I.INC26])*100).toFixed(2)+'%':'—')}
       ${dr('Impacto económico',fmt(r[I.IMP26]))}
       ${r[I.OB26]?`<div class="drawer-obs">${String(r[I.OB26]).replace(/\n/g,'<br>')}</div>`:''}</div>

@@ -272,22 +272,46 @@ let P={facturacion:35,estadoNeg:25,urgencia:20,poblacion:10,impacto:10};
 const MES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
 // ── CARGA PAGINADA ────────────────────────────────────────────────────────────
+function jsonp(url){
+  return new Promise(function(resolve,reject){
+    const cb='cb_'+Math.random().toString(36).slice(2);
+    const script=document.createElement('script');
+    const timer=setTimeout(function(){
+      delete window[cb];
+      script.remove();
+      reject(new Error('Timeout'));
+    },30000);
+    window[cb]=function(data){
+      clearTimeout(timer);
+      delete window[cb];
+      script.remove();
+      resolve(data);
+    };
+    script.src=url+(url.includes('?')?'&':'?')+'callback='+cb+'&t='+Date.now();
+    script.onerror=function(){
+      clearTimeout(timer);
+      delete window[cb];
+      reject(new Error('Failed to fetch'));
+    };
+    document.head.appendChild(script);
+  });
+}
+
 async function init(){
   try{
     let pg=0,done=false,total=null;
     while(!done){
-      const r=await fetch(`${API}?page=${pg}&t=${Date.now()}`);
-      const j=await r.json();
+      const j=await jsonp(API+'?page='+pg);
       if(j.rows&&j.rows.length>0) raw=raw.concat(j.rows);
       done=j.done; total=j.total; pg++;
       const pct=total?Math.min(95,Math.round(raw.length/total*100)):pg*8;
       document.getElementById('progFill').style.width=pct+'%';
-      document.getElementById('loadingProg').textContent=`${raw.length.toLocaleString()} prestadores cargados${total?' de ~'+Math.round((total-1)).toLocaleString():''}`;
-      document.getElementById('loadingText').textContent=`Cargando página ${pg}...`;
+      document.getElementById('loadingProg').textContent=raw.length.toLocaleString()+' prestadores cargados'+(total?' de ~'+(total-1).toLocaleString():'');
+      document.getElementById('loadingText').textContent='Cargando página '+pg+'...';
     }
     document.getElementById('progFill').style.width='100%';
     document.getElementById('loadingText').textContent='¡Carga completa!';
-    await new Promise(r=>setTimeout(r,400));
+    await new Promise(function(r){setTimeout(r,400);});
     document.getElementById('loadingScreen').style.display='none';
     document.getElementById('dataStatus').textContent=raw.length.toLocaleString()+' prestadores';
     fillFilters(); applyFilters();

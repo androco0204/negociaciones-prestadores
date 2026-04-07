@@ -215,12 +215,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 </div>
 
 <div class="panel" id="panel-calendario">
-  <div class="cal-legend">
-    <span><div class="legend-dot" style="background:var(--red)"></div>Alta (≥70)</span>
-    <span><div class="legend-dot" style="background:var(--amber)"></div>Media (40–69)</span>
-    <span><div class="legend-dot" style="background:var(--green)"></div>Baja (&lt;40)</span>
+  <div style="margin-bottom:12px;font-size:12px;color:var(--text2)">
+    Vista Gantt por regional y mes de legalización 2026 — clic en una barra para ver el detalle del prestador · clic en la regional para expandir/contraer
   </div>
-  <div class="cal-grid" id="calGrid"></div>
+  <div id="calGrid"></div>
 </div>
 
 <div class="panel" id="panel-alertas">
@@ -338,11 +336,19 @@ const sbadge=s=>{const c=s>=70?'b-red':s>=40?'b-amber':'b-green';const l=s>=70?'
 
 // ── FILTERS ───────────────────────────────────────────────────────────────────
 function fillFilters(){
+  const normalize=v=>String(v||'').trim().toUpperCase();
+  // Regional normalizada sin duplicados
+  const regsUnicas=[...new Set(raw.map(r=>normalize(r[I.REG])).filter(Boolean))].sort();
+  const selReg=document.getElementById('f-regional');
+  const curReg=selReg.value;
+  selReg.innerHTML='<option value="">Todas</option>'+regsUnicas.map(v=>`<option value="${v}">${v}</option>`).join('');
+  if(curReg)selReg.value=curReg;
+
   const uniq=col=>[...new Set(raw.map(r=>String(r[col]||'')).filter(Boolean))].sort();
   const fill=(id,vals)=>{const s=document.getElementById(id);const cur=s.value;s.innerHTML='<option value="">Todos</option>'+vals.map(v=>`<option value="${v}">${v}</option>`).join('');if(cur)s.value=cur;};
-  fill('f-regional',uniq(I.REG));fill('f-estado',uniq(I.EST26));
+  fill('f-estado',uniq(I.EST26));
   fill('f-tipo',uniq(I.TIP));fill('f-resp',uniq(I.RES26));
-  // Mes: construir opciones con nombre a partir de número
+  // Mes
   const mesesConDatos=[...new Set(raw.map(r=>Number(r[I.MLEG26])||null).filter(n=>n&&n>=1&&n<=12))].sort((a,b)=>a-b);
   const selMes=document.getElementById('f-mes');
   selMes.innerHTML='<option value="">Todos</option>'+mesesConDatos.map(n=>`<option value="${n}">${MES[n-1]} 2026</option>`).join('');
@@ -358,8 +364,9 @@ function applyFilters(){
   const resp=document.getElementById('f-resp').value;
   const mes=document.getElementById('f-mes').value;
   const q=(document.getElementById('f-search').value||'').toLowerCase();
+  const normalize=v=>String(v||'').trim().toUpperCase();
   filt=raw.filter(r=>{
-    if(reg&&String(r[I.REG]||'')!==reg)return false;
+    if(reg&&normalize(r[I.REG])!==reg)return false;
     if(est&&String(r[I.EST26]||'')!==est)return false;
     if(tipo&&String(r[I.TIP]||'')!==tipo)return false;
     if(resp&&String(r[I.RES26]||'')!==resp)return false;
@@ -439,30 +446,184 @@ function renderPrior(){
 }
 function srt(k){if(sortK===k)sortD*=-1;else{sortK=k;sortD=-1;}renderPrior();}
 
+function getEstadoGantt(r){
+  const e=String(r[I.EST26]||'');
+  if(e.includes('Finaliz')||e.includes('Legaliz'))return{cl:'gantt-done',label:'Finalizado',order:3};
+  if(e.includes('Negoci')||e.includes('Análisis')||e.includes('Comité')||e.includes('Pendiente')||e.includes('Param'))return{cl:'gantt-prog',label:'En proceso',order:2};
+  if(e.includes('Sin Inic')||e.includes('Sin Evid')||e==='')return{cl:'gantt-none',label:'Sin iniciar',order:1};
+  return{cl:'gantt-prog',label:'En proceso',order:2};
+}
+
 function renderCal(){
-  const grid=document.getElementById('calGrid');grid.innerHTML='';
-  // Solo mostrar meses que tienen prestadores asignados
-  let hayDatos=false;
-  MES.forEach((m,i)=>{
-    const mesNum=i+1; // 1-12
-    const pr=filt.filter(r=>{
-      const mv=r[I.MLEG26];
-      if(!mv||mv==='')return false;
-      return Number(mv)===mesNum;
-    });
-    if(pr.length===0)return; // no mostrar meses vacíos
-    hayDatos=true;
-    const sc=pr.map(r=>({r,s:score(r)})).sort((a,b)=>b.s-a.s);
-    const dots=sc.slice(0,8).map(({r,s})=>`<div class="cal-dot ${scol(s)}" title="${r[I.NOM]} — Score: ${s}" onclick="openDrawer(${raw.indexOf(r)})">${s}</div>`).join('');
-    const mas=sc.length>8?`<div class="cal-more">+${sc.length-8} más</div>`:'';
-    grid.innerHTML+=`<div class="cal-month">
-      <div class="cal-month-name">${m} 2026 <span style="color:var(--text3);font-weight:400">(${sc.length})</span></div>
-      <div class="cal-dots">${dots}${mas}</div>
-    </div>`;
+  const wrap=document.getElementById('calGrid');
+  wrap.style.display='block';
+
+  // Normalizar regional (trim + uppercase)
+  const normalize=v=>String(v||'').trim().toUpperCase();
+
+  // Agrupar por regional → mes
+  const regionales={};
+  filt.forEach(r=>{
+    const reg=normalize(r[I.REG])||'SIN REGIONAL';
+    const mes=Number(r[I.MLEG26]);
+    if(!mes||mes<1||mes>12)return;
+    if(!regionales[reg])regionales[reg]={};
+    if(!regionales[reg][mes])regionales[reg][mes]=[];
+    regionales[reg][mes].push(r);
   });
-  if(!hayDatos){
-    grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3);font-size:13px">Sin prestadores con mes de legalización asignado para los filtros actuales</div>';
+
+  const regsOrdenadas=Object.keys(regionales).sort();
+  if(!regsOrdenadas.length){
+    wrap.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3);font-size:13px">Sin prestadores con mes de legalización asignado</div>';
+    return;
   }
+
+  // Meses presentes en los datos
+  const mesesPresentes=[...new Set(filt.map(r=>Number(r[I.MLEG26])).filter(m=>m>=1&&m<=12))].sort((a,b)=>a-b);
+  const mesActual=new Date().getMonth()+1; // 1-12
+
+  let html=`
+  <style>
+    .gantt-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--r);background:var(--surface);box-shadow:var(--shadow)}
+    .gantt-table{width:100%;border-collapse:collapse;min-width:800px}
+    .gantt-head th{padding:8px 12px;font-size:11px;font-weight:600;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border);text-align:center;white-space:nowrap}
+    .gantt-head th.sticky{text-align:left;position:sticky;left:0;z-index:10;background:var(--surface2);min-width:160px}
+    .gantt-head th.mes-actual{background:var(--accent-light,#e8f0ec);color:var(--accent)}
+    .gantt-reg-row td{background:var(--surface2);padding:8px 12px;font-size:12px;font-weight:600;color:var(--text);border-top:2px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
+    .gantt-reg-row td.sticky{position:sticky;left:0;z-index:5;background:var(--surface2)}
+    .gantt-reg-row:hover td{background:#eceae4}
+    .gantt-prog-row td{padding:0;border-bottom:1px solid var(--border)}
+    .gantt-prog-row td.sticky{position:sticky;left:0;z-index:5;background:var(--surface);padding:6px 12px;font-size:11px;color:var(--text2)}
+    .gantt-cell{padding:6px 8px;vertical-align:top}
+    .gantt-bar-wrap{display:flex;flex-direction:column;gap:2px}
+    .gantt-bar{height:22px;border-radius:4px;display:flex;align-items:center;padding:0 8px;font-size:10px;font-weight:500;cursor:pointer;transition:opacity .15s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+    .gantt-bar:hover{opacity:.85}
+    .gantt-done{background:#d4edda;color:#1a6b3a;border:1px solid #a8dfc0}
+    .gantt-prog{background:#fff3cd;color:#854f0b;border:1px solid #f5d5a8}
+    .gantt-none{background:#f8d7da;color:#a32d2d;border:1px solid #f0c4be}
+    .gantt-mas{font-size:10px;color:var(--text3);padding:2px 4px;cursor:pointer}
+    .gantt-mas:hover{color:var(--text)}
+    .mes-summary{display:flex;gap:3px;justify-content:center;margin-bottom:4px}
+    .mes-pip{width:8px;height:8px;border-radius:50%}
+    .prog-bar-mini{height:3px;border-radius:2px;background:var(--border);margin-top:3px;overflow:hidden}
+    .prog-bar-mini-fill{height:3px;border-radius:2px;background:var(--green)}
+    .gantt-head-mes{display:flex;flex-direction:column;align-items:center;gap:2px}
+    .gantt-today-col{background:rgba(26,79,58,.04)!important}
+  </style>
+  <div class="gantt-wrap">
+  <table class="gantt-table">
+  <thead class="gantt-head"><tr>
+    <th class="sticky">Regional / Prestador</th>`;
+
+  mesesPresentes.forEach(m=>{
+    const esHoy=m===mesActual;
+    // Totales por mes para el header
+    const totalMes=filt.filter(r=>Number(r[I.MLEG26])===m);
+    const doneMes=totalMes.filter(r=>getEstadoGantt(r).order===3).length;
+    const progMes=totalMes.filter(r=>getEstadoGantt(r).order===2).length;
+    const noneMes=totalMes.filter(r=>getEstadoGantt(r).order===1).length;
+    const pct=totalMes.length?Math.round(doneMes/totalMes.length*100):0;
+    html+=`<th class="${esHoy?'mes-actual':''} ${esHoy?'gantt-today-col':''}">
+      <div class="gantt-head-mes">
+        <span style="font-size:12px;font-weight:600">${MES[m-1]}</span>
+        <div class="mes-summary">
+          ${noneMes?`<div class="mes-pip" style="background:#E24B4A" title="${noneMes} sin iniciar"></div>`:''}
+          ${progMes?`<div class="mes-pip" style="background:#BA7517" title="${progMes} en proceso"></div>`:''}
+          ${doneMes?`<div class="mes-pip" style="background:#639922" title="${doneMes} finalizados"></div>`:''}
+        </div>
+        <span style="font-size:10px;color:var(--text3)">${totalMes.length} · ${pct}%</span>
+        <div class="prog-bar-mini" style="width:60px"><div class="prog-bar-mini-fill" style="width:${pct}%"></div></div>
+      </div>
+    </th>`;
+  });
+  html+='</tr></thead><tbody>';
+
+  regsOrdenadas.forEach(reg=>{
+    const regData=regionales[reg];
+    const totalReg=Object.values(regData).flat();
+    const doneReg=totalReg.filter(r=>getEstadoGantt(r).order===3).length;
+    const pctReg=totalReg.length?Math.round(doneReg/totalReg.length*100):0;
+
+    html+=`<tr class="gantt-reg-row" onclick="toggleRegional('reg-${reg.replace(/\s/g,'_')}')">
+      <td class="sticky">
+        <span id="icon-reg-${reg.replace(/\s/g,'_')}">▼</span> ${reg}
+        <span style="font-size:10px;font-weight:400;color:var(--text3);margin-left:6px">${totalReg.length} prestadores · ${pctReg}% completado</span>
+      </td>`;
+    mesesPresentes.forEach(m=>{
+      const cnt=(regData[m]||[]).length;
+      const esHoy=m===mesActual;
+      html+=`<td class="${esHoy?'gantt-today-col':''}" style="text-align:center;padding:6px;font-size:11px;color:var(--text3)">${cnt?cnt+' ☑':''}</td>`;
+    });
+    html+='</tr>';
+
+    // Filas de prestadores por mes (top 5 visibles)
+    const MAX_VISIBLE=5;
+    // Recopilar todos los prestadores de esta regional con su mes
+    const prestadoresPorMes={};
+    mesesPresentes.forEach(m=>{prestadoresPorMes[m]=regData[m]||[];});
+
+    html+=`<tr class="gantt-prog-row" id="reg-${reg.replace(/\s/g,'_')}">
+      <td class="sticky" style="vertical-align:top;padding-top:8px">
+        <div style="font-size:10px;color:var(--text3);line-height:1.8">
+          <div style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#d4edda;border:1px solid #a8dfc0;display:inline-block"></span> Finalizado</div>
+          <div style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#fff3cd;border:1px solid #f5d5a8;display:inline-block"></span> En proceso</div>
+          <div style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#f8d7da;border:1px solid #f0c4be;display:inline-block"></span> Sin iniciar</div>
+        </div>
+      </td>`;
+
+    mesesPresentes.forEach(m=>{
+      const prs=prestadoresPorMes[m];
+      const esHoy=m===mesActual;
+      html+=`<td class="gantt-cell ${esHoy?'gantt-today-col':''}">`;
+      if(!prs.length){html+='</td>';return;}
+      const sorted=[...prs].sort((a,b)=>getEstadoGantt(a).order-getEstadoGantt(b).order);
+      html+='<div class="gantt-bar-wrap">';
+      sorted.slice(0,MAX_VISIBLE).forEach(r=>{
+        const eg=getEstadoGantt(r);
+        const nom=String(r[I.NOM]||'').substring(0,22);
+        const idx=raw.indexOf(r);
+        html+=`<div class="gantt-bar ${eg.cl}" onclick="openDrawer(${idx})" title="${r[I.NOM]} — ${eg.label}">${nom}</div>`;
+      });
+      if(sorted.length>MAX_VISIBLE){
+        html+=`<div class="gantt-mas" onclick="showAllMes('${reg}',${m})">+${sorted.length-MAX_VISIBLE} más →</div>`;
+      }
+      html+='</div></td>';
+    });
+    html+='</tr>';
+  });
+
+  html+='</tbody></table></div>';
+  wrap.innerHTML=html;
+}
+
+function toggleRegional(id){
+  const el=document.getElementById(id);
+  const icon=document.getElementById('icon-'+id);
+  if(!el)return;
+  const visible=el.style.display!=='none';
+  el.style.display=visible?'none':'table-row';
+  if(icon)icon.textContent=visible?'▶':'▼';
+}
+
+function showAllMes(reg,mes){
+  const normalize=v=>String(v||'').trim().toUpperCase();
+  const prs=filt.filter(r=>normalize(r[I.REG])===reg&&Number(r[I.MLEG26])===mes);
+  const sorted=[...prs].sort((a,b)=>getEstadoGantt(a).order-getEstadoGantt(b).order);
+  // Abrir modal simple
+  const modal=document.createElement('div');
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;display:flex;align-items:center;justify-content:center';
+  modal.innerHTML=`<div style="background:var(--surface);border-radius:var(--r);padding:20px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:var(--shadow-md)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-size:13px;font-weight:600">${reg} — ${MES[mes-1]} 2026 (${prs.length} prestadores)</div>
+      <button onclick="this.closest('div[style]').remove()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text2)">×</button>
+    </div>
+    ${sorted.map(r=>{const eg=getEstadoGantt(r);const idx=raw.indexOf(r);return`<div onclick="this.closest('div[style]').remove();openDrawer(${idx})" style="padding:8px 10px;border-radius:6px;margin-bottom:4px;cursor:pointer;border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:12px" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+      <span style="font-weight:500">${r[I.NOM]}</span>
+      <span class="badge ${eg.cl==='gantt-done'?'b-green':eg.cl==='gantt-prog'?'b-amber':'b-red'}">${eg.label}</span>
+    </div>`;}).join('')}
+  </div>`;
+  modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
+  document.body.appendChild(modal);
 }
 
 function renderAlertas(){

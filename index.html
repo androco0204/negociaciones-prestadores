@@ -328,20 +328,20 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
   <div class="panel" id="panel-garantias">
     <div class="section-hdr"><div><div class="section-title">Garantias Contractuales</div><div class="section-sub" id="garSubtitle">Polizas RC y Cumplimiento por prestador</div></div>
     <div style="display:flex;gap:8px;align-items:center">
-      <select id="garFilter" class="flt-select" style="min-width:130px" onchange="filterGar()"><option value="">Todas las regionales</option></select>
-      <select id="garTabFilter" class="flt-select" style="min-width:120px" onchange="filterGar()">
+      <select id="garFilter" class="flt-select" style="min-width:130px" ><option value="">Todas las regionales</option></select>
+      <select id="garTabFilter" class="flt-select" style="min-width:120px" >
         <option value="all">RC + Cumplimiento</option>
         <option value="rc">Solo RC</option>
         <option value="cumpl">Solo Cumplimiento</option>
       </select>
-      <select id="garAlertFilter" class="flt-select" style="min-width:130px" onchange="filterGar()">
+      <select id="garAlertFilter" class="flt-select" style="min-width:130px">
         <option value="">Todos los estados</option>
         <option value="vencida">Vencidas</option>
         <option value="critica">Criticas (&lt;30d)</option>
         <option value="advertencia">Advertencia (&lt;60d)</option>
         <option value="ok">Vigentes</option>
       </select>
-      <button class="btn-primary" id="btnSendAlerts" style="padding:6px 14px;font-size:11px;display:none" onclick="sendGarAlerts()">&#128231; Enviar alertas</button>
+      <button class="btn-primary" id="btnSendAlerts" style="padding:6px 14px;font-size:11px;display:none" >&#128231; Enviar alertas</button>
     </div>
     </div>
     <div class="gar-banner" id="garBanner">
@@ -399,7 +399,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 (function(){
 'use strict';
 var API='https://script.google.com/macros/s/AKfycbz-CrZkjPP3f0vZDfbNOqCTi8e_QVNv8JRyCjiDqF-VR68apg6XSzeWVI1WJUPJ6SEC/exec';
-var API_GAR='https://script.google.com/macros/s/AKfycbxPrFnrNkC3gXd9gAB2S5DiGmKvdMMomntC4uB4IhzxAhKH0fiLwU08VK-mM4FaMeYG/exec'; // Se actualiza al desplegar garantias_script.gs
+var API_GAR='__GAR_SCRIPT_URL__'; // Se actualiza al desplegar garantias_script.gs
 var DEFAULT_ALLOWED=['@eps-sanitas.com.co','@epssanitas.com','@keralty.com','@impulsa.co','@sanitas.com.co','@gmail.com'];
 var MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 var MESC=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -821,6 +821,19 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('prioGrid').addEventListener('click',function(e){var card=e.target.closest('.prio-card');if(card)openDrawer(parseInt(card.dataset.idx));});
   document.getElementById('calGrid').addEventListener('click',function(e){var item=e.target.closest('.cal-item');if(item)openDrawer(parseInt(item.dataset.idx));});
   document.getElementById('alertList').addEventListener('click',function(e){var item=e.target.closest('.alert-item');if(item)openDrawer(parseInt(item.dataset.idx));});
+
+  // Garantias listeners (added dynamically since elements may not exist yet)
+  function addGarListeners(){
+    var gf=document.getElementById('garFilter');
+    var gtf=document.getElementById('garTabFilter');
+    var gaf=document.getElementById('garAlertFilter');
+    var gsa=document.getElementById('btnSendAlerts');
+    if(gf)gf.addEventListener('change',filterGar);
+    if(gtf)gtf.addEventListener('change',filterGar);
+    if(gaf)gaf.addEventListener('change',filterGar);
+    if(gsa)gsa.addEventListener('click',sendGarAlerts);
+  }
+  addGarListeners();
 
   var saved=sessionStorage.getItem('neg_user');
   if(saved&&isAllowed(saved)){currentUser=saved;document.getElementById('loginScreen').style.display='none';startApp();}

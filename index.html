@@ -326,18 +326,52 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
     <div class="alert-grid" id="alertList"></div>
   </div>
   <div class="panel" id="panel-garantias">
-    <div class="section-hdr"><div><div class="section-title">Garantias Contractuales</div><div class="section-sub">Polizas RC y Cumplimiento por prestador</div></div></div>
-    <div class="gar-banner"><div style="font-size:20px;flex-shrink:0">&#128279;</div><div class="gar-banner p"><strong>Modulo pendiente de configuracion</strong>Conecta el Google Sheet con las polizas RC y Cumplimiento. Estructura: NIT - Prestador - Regional - N Poliza RC - Vencimiento RC - Estado RC - N Poliza Cumplimiento - Vencimiento - Estado.</div></div>
-    <div class="gar-config" id="garConfig">
-      <h3>Conectar Sheet de Garantias</h3>
-      <p>Ingresa el ID del Google Sheet con las polizas.</p>
-      <input class="gar-input" id="garSheetId" value="1Cwt3sejUY3XahyFearMTFvB6pDG21WL6VVvflbp-SVc" placeholder="ID del Sheet">
-      <input class="gar-input" id="garScriptUrl" placeholder="URL del Apps Script (cuando este disponible)" style="margin-top:8px">
-      <button class="btn-primary" id="btnConnectGar" style="margin-top:12px">Conectar y cargar</button>
+    <div class="section-hdr"><div><div class="section-title">Garantias Contractuales</div><div class="section-sub" id="garSubtitle">Polizas RC y Cumplimiento por prestador</div></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="garFilter" class="flt-select" style="min-width:130px" onchange="filterGar()"><option value="">Todas las regionales</option></select>
+      <select id="garTabFilter" class="flt-select" style="min-width:120px" onchange="filterGar()">
+        <option value="all">RC + Cumplimiento</option>
+        <option value="rc">Solo RC</option>
+        <option value="cumpl">Solo Cumplimiento</option>
+      </select>
+      <select id="garAlertFilter" class="flt-select" style="min-width:130px" onchange="filterGar()">
+        <option value="">Todos los estados</option>
+        <option value="vencida">Vencidas</option>
+        <option value="critica">Criticas (&lt;30d)</option>
+        <option value="advertencia">Advertencia (&lt;60d)</option>
+        <option value="ok">Vigentes</option>
+      </select>
+      <button class="btn-primary" id="btnSendAlerts" style="padding:6px 14px;font-size:11px;display:none" onclick="sendGarAlerts()">&#128231; Enviar alertas</button>
     </div>
-    <div class="gar-kpi-grid" id="garKpis"></div>
-    <div id="garTableWrap"></div>
-  </div>
+    </div>
+    <div class="gar-banner" id="garBanner">
+      <div style="font-size:20px;flex-shrink:0">&#128279;</div>
+      <div class="gar-banner p"><strong>Modulo pendiente de configuracion</strong>
+      Ingresa la URL del Apps Script de garantias y haz clic en Cargar. El script lee las pestanas "Poliza Resp Civil Medica" y "Poliza de Cumplimiento" y genera alertas automaticas de vencimiento.</div>
+    </div>
+    <div class="gar-config" id="garConfig">
+      <h3>&#128203; Conectar Apps Script de Garantias</h3>
+      <p>Despliega el archivo <code style="font-family:monospace;font-size:11px">garantias_script.gs</code> como Web App en Google Apps Script y pega la URL aqui.</p>
+      <input class="gar-input" id="garScriptUrl" placeholder="https://script.google.com/macros/s/.../exec">
+      <button class="btn-primary" id="btnConnectGar" style="margin-top:12px">Cargar garantias</button>
+    </div>
+    <div class="gar-kpi-grid" id="garKpis" style="display:none"></div>
+    <div id="garContent" style="display:none">
+      <div style="background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm);margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border2);background:var(--corp)">
+          <span style="font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.5px" id="garTableTitle">Polizas</span>
+          <span style="font-size:11px;color:rgba(255,255,255,.7);font-family:var(--mono)" id="garTableCount"></span>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="gar-table" id="garTable">
+            <thead id="garThead"></thead>
+            <tbody id="garTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div id="garAlertMsg" style="display:none;margin-top:10px;padding:10px 14px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--r);font-size:12px;color:var(--green)"></div>
+  
   <div class="panel" id="panel-params">
     <div class="section-hdr"><div><div class="section-title">Parametros de Priorizacion</div><div class="section-sub">Ajusta los pesos del score - deben sumar 100%</div></div></div>
     <div class="params-grid">
@@ -654,6 +688,118 @@ function applyParams(){
   renderAll();
 }
 
+
+// ── GARANTIAS ─────────────────────────────────────────────
+var garRcData=[], garCumplData=[], garScriptUrlSaved='';
+
+function filterGar(){renderGarTable();}
+
+function loadGarantias(){
+  var url=document.getElementById('garScriptUrl').value.trim();
+  if(!url){alert('Ingresa la URL del Apps Script de garantias');return;}
+  garScriptUrlSaved=url;
+  localStorage.setItem('gar_script_url',url);
+  var config=document.getElementById('garConfig');
+  config.innerHTML='<div style="padding:24px;text-align:center;color:var(--text3)">&#9203; Conectando con el Sheet de garantias...</div>';
+  apiFetch(url+'?action=garantias').then(function(data){
+    if(!data||!data.ok){config.innerHTML='<div style="padding:20px;text-align:center;color:var(--red)">Error al cargar datos. Verifica que el script este desplegado como Web App publica.</div>';return;}
+    garRcData=data.rc||[];
+    garCumplData=data.cumpl||[];
+    document.getElementById('garConfig').style.display='none';
+    document.getElementById('garBanner').style.display='none';
+    document.getElementById('garKpis').style.display='grid';
+    document.getElementById('garContent').style.display='block';
+    document.getElementById('btnSendAlerts').style.display='inline-flex';
+    // Populate regional filter
+    var regs=[];
+    garRcData.concat(garCumplData).forEach(function(p){if(p.regional&&regs.indexOf(p.regional)<0)regs.push(p.regional);});
+    regs.sort();
+    var sel=document.getElementById('garFilter');
+    sel.innerHTML='<option value="">Todas las regionales</option>';
+    regs.forEach(function(r){var o=document.createElement('option');o.value=o.textContent=r;sel.appendChild(o);});
+    renderGarKpis(data.kpis);
+    renderGarTable();
+    document.getElementById('garSubtitle').textContent='Actualizado: '+data.updated;
+  }).catch(function(e){
+    config.innerHTML='<div style="padding:20px;text-align:center;color:var(--red)">Error: '+e.message+'</div>';
+  });
+}
+
+function renderGarKpis(k){
+  document.getElementById('garKpis').innerHTML=
+    '<div class="kpi-card red"><div class="kpi-label">RC Vencidas</div><div class="kpi-value red">'+k.rc_vencidas+'</div><div class="kpi-sub">de '+k.rc_total+' RC totales</div></div>'+
+    '<div class="kpi-card red"><div class="kpi-label">RC Criticas</div><div class="kpi-value red">'+k.rc_criticas+'</div><div class="kpi-sub">vencen en menos de 30 dias</div></div>'+
+    '<div class="kpi-card amber"><div class="kpi-label">RC Advertencia</div><div class="kpi-value amber">'+k.rc_advertencia+'</div><div class="kpi-sub">vencen en menos de 60 dias</div></div>'+
+    '<div class="kpi-card green"><div class="kpi-label">RC Vigentes</div><div class="kpi-value green">'+k.rc_ok+'</div><div class="kpi-sub">sin alertas</div></div>'+
+    '<div class="kpi-card red"><div class="kpi-label">Cumpl. Vencidas</div><div class="kpi-value red">'+k.cu_vencidas+'</div><div class="kpi-sub">de '+k.cu_total+' totales</div></div>'+
+    '<div class="kpi-card red"><div class="kpi-label">Cumpl. Criticas</div><div class="kpi-value red">'+k.cu_criticas+'</div><div class="kpi-sub">vencen en menos de 30 dias</div></div>'+
+    '<div class="kpi-card amber"><div class="kpi-label">Cumpl. Advertencia</div><div class="kpi-value amber">'+k.cu_advertencia+'</div><div class="kpi-sub">vencen en menos de 60 dias</div></div>'+
+    '<div class="kpi-card green"><div class="kpi-label">Cumpl. Vigentes</div><div class="kpi-value green">'+k.cu_ok+'</div><div class="kpi-sub">sin alertas</div></div>';
+}
+
+function renderGarTable(){
+  var reg=document.getElementById('garFilter').value;
+  var tab=document.getElementById('garTabFilter').value;
+  var alerta=document.getElementById('garAlertFilter').value;
+  function applyFilters(arr){
+    return arr.filter(function(p){
+      if(reg&&p.regional!==reg)return false;
+      if(alerta&&p.alerta!==alerta)return false;
+      return true;
+    });
+  }
+  var showRc=tab==='all'||tab==='rc';
+  var showCu=tab==='all'||tab==='cumpl';
+  var rc=showRc?applyFilters(garRcData):[];
+  var cu=showCu?applyFilters(garCumplData):[];
+  var all=rc.map(function(p){return Object.assign({},p,{_tipo:'RC'});})
+           .concat(cu.map(function(p){return Object.assign({},p,{_tipo:'Cumpl.'});}));
+  all.sort(function(a,b){return (a.dias||9999)-(b.dias||9999);});
+  document.getElementById('garTableCount').textContent=all.length.toLocaleString('es-CO')+' polizas';
+  document.getElementById('garTableTitle').textContent=tab==='rc'?'Polizas RC':tab==='cumpl'?'Polizas de Cumplimiento':'Polizas RC y Cumplimiento';
+
+  var alertColors={vencida:'var(--red)',critica:'var(--red)',advertencia:'var(--amber)',ok:'var(--green)',sin_fecha:'var(--gray)'};
+  var alertLabels={vencida:'VENCIDA',critica:'&lt;30d',advertencia:'&lt;60d',ok:'VIGENTE',sin_fecha:'Sin fecha'};
+  var alertBg={vencida:'var(--red-bg)',critica:'var(--red-bg)',advertencia:'var(--amber-bg)',ok:'',sin_fecha:''};
+
+  document.getElementById('garThead').innerHTML='<tr><th>Tipo</th><th>NIT</th><th>Prestador</th><th>Regional</th><th>No. Poliza</th><th>Vence</th><th>Dias</th><th>Aseguradora</th><th>Estado Poliza</th><th>Estado Final</th><th>Enlace</th></tr>';
+  if(!all.length){document.getElementById('garTbody').innerHTML='<tr><td colspan="11" style="text-align:center;padding:28px;color:var(--text3)">Sin polizas con los filtros actuales</td></tr>';return;}
+  document.getElementById('garTbody').innerHTML=all.map(function(p){
+    var al=p.alerta||'sin_fecha';
+    var diasTxt=p.dias===null?'--':p.dias<0?p.dias+'d':'+'+ p.dias+'d';
+    var enlace=p.enlace?'<a href="'+p.enlace+'" target="_blank" style="color:var(--accent);font-size:11px">Ver</a>':'--';
+    return '<tr style="background:'+( alertBg[al]||'')+'">'+
+      '<td><span class="badge '+(al==='ok'?'green':al==='sin_fecha'?'gray':'red')+'">'+p._tipo+'</span></td>'+
+      '<td style="font-family:var(--mono);font-size:11px">'+p.nit+'</td>'+
+      '<td style="font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+p.nombre+'">'+p.nombre+'</td>'+
+      '<td style="font-size:11px">'+p.regional+'</td>'+
+      '<td style="font-family:var(--mono);font-size:11px">'+p.num_pol+'</td>'+
+      '<td style="font-size:11px">'+p.ffin_pol+'</td>'+
+      '<td style="font-family:var(--mono);font-weight:700;color:'+alertColors[al]+'">'+diasTxt+'</td>'+
+      '<td style="font-size:11px">'+p.aseguradora+'</td>'+
+      '<td>'+p.estado_pol+'</td>'+
+      '<td><span class="badge '+(al==='ok'?'green':al==='sin_fecha'?'gray':al==='advertencia'?'amber':'red')+'">'+alertLabels[al]+'</span></td>'+
+      '<td>'+enlace+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+function sendGarAlerts(){
+  if(!garScriptUrlSaved){alert('Primero carga las garantias');return;}
+  var btn=document.getElementById('btnSendAlerts');
+  btn.textContent='Enviando...';btn.disabled=true;
+  apiFetch(garScriptUrlSaved+'?action=sendAlerts').then(function(r){
+    var msg=document.getElementById('garAlertMsg');
+    msg.style.display='block';
+    msg.textContent='Alertas enviadas a '+r.sent+' regional(es): '+(r.regionales||[]).join(', ');
+    btn.textContent='&#128231; Enviar alertas';btn.disabled=false;
+    setTimeout(function(){msg.style.display='none';},6000);
+  }).catch(function(e){
+    alert('Error al enviar alertas: '+e.message);
+    btn.textContent='&#128231; Enviar alertas';btn.disabled=false;
+  });
+}
+
 // Event listeners (no inline handlers to avoid CSP issues)
 document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('loginBtn').addEventListener('click',doLogin);
@@ -673,7 +819,8 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('calGrid').addEventListener('click',function(e){var item=e.target.closest('.cal-item');if(item)openDrawer(parseInt(item.dataset.idx));});
   document.getElementById('alertList').addEventListener('click',function(e){var item=e.target.closest('.alert-item');if(item)openDrawer(parseInt(item.dataset.idx));});
 
-  var saved=sessionStorage.getItem('neg_user');
+  var savedGarUrl=localStorage.getItem('gar_script_url');if(savedGarUrl)document.getElementById('garScriptUrl').value=savedGarUrl;
+var saved=sessionStorage.getItem('neg_user');
   if(saved&&isAllowed(saved)){currentUser=saved;document.getElementById('loginScreen').style.display='none';startApp();}
 });
 })();

@@ -346,8 +346,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
     </div>
     <div class="gar-banner" id="garBanner">
       <div style="font-size:20px;flex-shrink:0">&#128279;</div>
-      <div class="gar-banner p"><strong>Modulo pendiente de configuracion</strong>
-      Ingresa la URL del Apps Script de garantias y haz clic en Cargar. El script lee las pestanas "Poliza Resp Civil Medica" y "Poliza de Cumplimiento" y genera alertas automaticas de vencimiento.</div>
+      <div class="gar-banner p"><strong>Garantias Contractuales</strong>
+      Este modulo lee automaticamente las pestanas Poliza Resp Civil Medica y Poliza de Cumplimiento desde el mismo Apps Script de prestadores.</div>
     </div>
     <div class="gar-config" id="garConfig">
       <div style="padding:32px;text-align:center">
@@ -399,7 +399,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 (function(){
 'use strict';
 var API='https://script.google.com/macros/s/AKfycbz-CrZkjPP3f0vZDfbNOqCTi8e_QVNv8JRyCjiDqF-VR68apg6XSzeWVI1WJUPJ6SEC/exec';
-var API_GAR='__GAR_SCRIPT_URL__'; // Se actualiza al desplegar garantias_script.gs
+
 var DEFAULT_ALLOWED=['@eps-sanitas.com.co','@epssanitas.com','@keralty.com','@impulsa.co','@sanitas.com.co','@gmail.com'];
 var MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 var MESC=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -698,13 +698,9 @@ var garRcData=[], garCumplData=[], garScriptUrlSaved='', garLoaded=false;
 function filterGar(){renderGarTable();}
 
 function loadGarantias(){
-  garScriptUrlSaved=API_GAR;
+  garScriptUrlSaved=API;
   var config=document.getElementById('garConfig');
-  if(API_GAR==='__GAR_SCRIPT_URL__'){
-    config.innerHTML='<div style="padding:28px;text-align:center"><div style="font-size:13px;color:var(--amber);font-weight:600;margin-bottom:8px">&#9888; Apps Script de garantias pendiente de configuracion</div><div style="font-size:12px;color:var(--text3)">Despliega <code style="font-family:monospace">garantias_script.gs</code> y actualiza la constante <code style="font-family:monospace">API_GAR</code> en el HTML.</div></div>';
-    return;
-  }
-  apiFetch(API_GAR+'?action=garantias').then(function(data){
+  apiFetch(API+'?action=garantias').then(function(data){
     if(!data||!data.ok){config.innerHTML='<div style="padding:20px;text-align:center;color:var(--red)">Error al cargar datos. Verifica que el script este desplegado como Web App publica.</div>';return;}
     garRcData=data.rc||[];
     garCumplData=data.cumpl||[];
@@ -791,7 +787,7 @@ function sendGarAlerts(){
   if(!garScriptUrlSaved){alert('Primero carga las garantias');return;}
   var btn=document.getElementById('btnSendAlerts');
   btn.textContent='Enviando...';btn.disabled=true;
-  apiFetch(API_GAR+'?action=sendAlerts').then(function(r){
+  apiFetch(API+'?action=sendAlerts').then(function(r){
     var msg=document.getElementById('garAlertMsg');
     msg.style.display='block';
     msg.textContent='Alertas enviadas a '+r.sent+' regional(es): '+(r.regionales||[]).join(', ');

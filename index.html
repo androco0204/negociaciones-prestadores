@@ -471,8 +471,7 @@ function doLogout(){
 
 function saveAllowedEmails(){
   const v=document.getElementById('allowedEmails').value;
-  const list=v.split('
-').map(x=>x.trim()).filter(Boolean);
+  const list=v.split('\n').map(x=>x.trim()).filter(Boolean);
   localStorage.setItem('neg_emails',JSON.stringify(list));
   const el=document.getElementById('emailsSaved');el.style.display='inline';
   setTimeout(()=>el.style.display='none',2500);
@@ -483,8 +482,7 @@ function setUserUI(){
   const name=parts.map(p=>p.charAt(0).toUpperCase()+p.slice(1)).join(' ');
   document.getElementById('userName').textContent=name;
   document.getElementById('userAvatar').textContent=name.charAt(0).toUpperCase();
-  document.getElementById('allowedEmails').value=getAllowed().join('
-');
+  document.getElementById('allowedEmails').value=getAllowed().join('\n');
 }
 
 function startApp(){

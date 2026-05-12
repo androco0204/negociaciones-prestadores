@@ -350,10 +350,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
       Ingresa la URL del Apps Script de garantias y haz clic en Cargar. El script lee las pestanas "Poliza Resp Civil Medica" y "Poliza de Cumplimiento" y genera alertas automaticas de vencimiento.</div>
     </div>
     <div class="gar-config" id="garConfig">
-      <h3>&#128203; Conectar Apps Script de Garantias</h3>
-      <p>Despliega el archivo <code style="font-family:monospace;font-size:11px">garantias_script.gs</code> como Web App en Google Apps Script y pega la URL aqui.</p>
-      <input class="gar-input" id="garScriptUrl" placeholder="https://script.google.com/macros/s/.../exec">
-      <button class="btn-primary" id="btnConnectGar" style="margin-top:12px">Cargar garantias</button>
+      <div style="padding:32px;text-align:center">
+        <div class="ld-spin" style="margin:0 auto 14px"></div>
+        <div style="font-size:13px;color:var(--text2);font-weight:500">Cargando garantias contractuales...</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:6px">Leyendo Sheet de polizas RC y Cumplimiento</div>
+      </div>
     </div>
     <div class="gar-kpi-grid" id="garKpis" style="display:none"></div>
     <div id="garContent" style="display:none">
@@ -398,6 +399,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 (function(){
 'use strict';
 var API='https://script.google.com/macros/s/AKfycbz-CrZkjPP3f0vZDfbNOqCTi8e_QVNv8JRyCjiDqF-VR68apg6XSzeWVI1WJUPJ6SEC/exec';
+var API_GAR='https://script.google.com/macros/s/AKfycbxPrFnrNkC3gXd9gAB2S5DiGmKvdMMomntC4uB4IhzxAhKH0fiLwU08VK-mM4FaMeYG/exec'; // Se actualiza al desplegar garantias_script.gs
 var DEFAULT_ALLOWED=['@eps-sanitas.com.co','@epssanitas.com','@keralty.com','@impulsa.co','@sanitas.com.co','@gmail.com'];
 var MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 var MESC=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -555,6 +557,7 @@ function showPanel(id){
   document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
   var el=document.getElementById('panel-'+id);if(el)el.classList.add('active');
   document.querySelectorAll('.htab').forEach(function(b){b.classList.toggle('active',b.dataset.panel===id);});
+  if(id==='garantias'&&!garLoaded){garLoaded=true;loadGarantias();}
 }
 function renderAll(){renderDashboard();renderPriorizacion();renderCalendario();renderAlertas();}
 
@@ -690,18 +693,18 @@ function applyParams(){
 
 
 // ── GARANTIAS ─────────────────────────────────────────────
-var garRcData=[], garCumplData=[], garScriptUrlSaved='';
+var garRcData=[], garCumplData=[], garScriptUrlSaved='', garLoaded=false;
 
 function filterGar(){renderGarTable();}
 
 function loadGarantias(){
-  var url=document.getElementById('garScriptUrl').value.trim();
-  if(!url){alert('Ingresa la URL del Apps Script de garantias');return;}
-  garScriptUrlSaved=url;
-  localStorage.setItem('gar_script_url',url);
+  garScriptUrlSaved=API_GAR;
   var config=document.getElementById('garConfig');
-  config.innerHTML='<div style="padding:24px;text-align:center;color:var(--text3)">&#9203; Conectando con el Sheet de garantias...</div>';
-  apiFetch(url+'?action=garantias').then(function(data){
+  if(API_GAR==='__GAR_SCRIPT_URL__'){
+    config.innerHTML='<div style="padding:28px;text-align:center"><div style="font-size:13px;color:var(--amber);font-weight:600;margin-bottom:8px">&#9888; Apps Script de garantias pendiente de configuracion</div><div style="font-size:12px;color:var(--text3)">Despliega <code style="font-family:monospace">garantias_script.gs</code> y actualiza la constante <code style="font-family:monospace">API_GAR</code> en el HTML.</div></div>';
+    return;
+  }
+  apiFetch(API_GAR+'?action=garantias').then(function(data){
     if(!data||!data.ok){config.innerHTML='<div style="padding:20px;text-align:center;color:var(--red)">Error al cargar datos. Verifica que el script este desplegado como Web App publica.</div>';return;}
     garRcData=data.rc||[];
     garCumplData=data.cumpl||[];
@@ -788,7 +791,7 @@ function sendGarAlerts(){
   if(!garScriptUrlSaved){alert('Primero carga las garantias');return;}
   var btn=document.getElementById('btnSendAlerts');
   btn.textContent='Enviando...';btn.disabled=true;
-  apiFetch(garScriptUrlSaved+'?action=sendAlerts').then(function(r){
+  apiFetch(API_GAR+'?action=sendAlerts').then(function(r){
     var msg=document.getElementById('garAlertMsg');
     msg.style.display='block';
     msg.textContent='Alertas enviadas a '+r.sent+' regional(es): '+(r.regionales||[]).join(', ');
@@ -808,7 +811,7 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('btnClear').addEventListener('click',function(){['f-reg','f-est','f-tipo','f-resp','f-mes'].forEach(function(id){document.getElementById(id).value='';});applyFilters();});
   document.getElementById('drwClose').addEventListener('click',closeDrawer);
   document.getElementById('drwOverlay').addEventListener('click',closeDrawer);
-  document.getElementById('btnConnectGar').addEventListener('click',loadGarantias);
+  // garantias auto-loads on tab open
   document.getElementById('btnApplyParams').addEventListener('click',applyParams);
   document.getElementById('btnSaveEmails').addEventListener('click',saveAllowedEmails);
   ['f-reg','f-est','f-tipo','f-resp','f-mes'].forEach(function(id){document.getElementById(id).addEventListener('change',applyFilters);});
@@ -819,8 +822,7 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('calGrid').addEventListener('click',function(e){var item=e.target.closest('.cal-item');if(item)openDrawer(parseInt(item.dataset.idx));});
   document.getElementById('alertList').addEventListener('click',function(e){var item=e.target.closest('.alert-item');if(item)openDrawer(parseInt(item.dataset.idx));});
 
-  var savedGarUrl=localStorage.getItem('gar_script_url');if(savedGarUrl)document.getElementById('garScriptUrl').value=savedGarUrl;
-var saved=sessionStorage.getItem('neg_user');
+  var saved=sessionStorage.getItem('neg_user');
   if(saved&&isAllowed(saved)){currentUser=saved;document.getElementById('loginScreen').style.display='none';startApp();}
 });
 })();

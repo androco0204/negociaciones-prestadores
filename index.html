@@ -784,19 +784,50 @@ function renderGarTable(){
 }
 
 function sendGarAlerts(){
-  if(!garScriptUrlSaved){alert('Primero carga las garantias');return;}
   var btn=document.getElementById('btnSendAlerts');
-  btn.textContent='Enviando...';btn.disabled=true;
-  apiFetch(API+'?action=sendAlerts').then(function(r){
-    var msg=document.getElementById('garAlertMsg');
-    msg.style.display='block';
-    msg.textContent='Alertas enviadas a '+r.sent+' regional(es): '+(r.regionales||[]).join(', ');
-    btn.textContent='&#128231; Enviar alertas';btn.disabled=false;
-    setTimeout(function(){msg.style.display='none';},6000);
-  }).catch(function(e){
-    alert('Error al enviar alertas: '+e.message);
-    btn.textContent='&#128231; Enviar alertas';btn.disabled=false;
-  });
+  var msg=document.getElementById('garAlertMsg');
+  btn.innerHTML='&#9203; Enviando...';btn.disabled=true;
+  msg.style.display='none';
+
+  // Safety reset after 35s in case Apps Script is slow sending emails
+  var safetyTimer=setTimeout(function(){
+    btn.innerHTML='&#128231; Enviar alertas';btn.disabled=false;
+    showGarMsg('amber','Las alertas se estan procesando en segundo plano. Los correos llegaran en unos minutos.');
+  },35000);
+
+  var cb='_sa_'+Date.now();
+  var s=document.createElement('script');
+  window[cb]=function(r){
+    clearTimeout(safetyTimer);
+    delete window[cb]; if(s.parentNode)s.parentNode.removeChild(s);
+    btn.innerHTML='&#128231; Enviar alertas';btn.disabled=false;
+    if(r&&r.sent>0){
+      showGarMsg('green','Alertas enviadas a '+r.sent+' regional(es): '+(r.regionales||[]).join(', '));
+    } else {
+      showGarMsg('amber','Proceso completado. Verifica que los correos en EMAILS_REGIONAL esten configurados en el Apps Script.');
+    }
+  };
+  s.onerror=function(){
+    clearTimeout(safetyTimer);
+    delete window[cb]; if(s.parentNode)s.parentNode.removeChild(s);
+    btn.innerHTML='&#128231; Enviar alertas';btn.disabled=false;
+    showGarMsg('red','Error al conectar. Verifica el despliegue del Apps Script.');
+  };
+  s.src=API+'?action=sendAlerts&callback='+cb+'&t='+Date.now();
+  document.head.appendChild(s);
+}
+
+function showGarMsg(color,text){
+  var colors={
+    green:{bg:'var(--green-bg)',border:'var(--green-border)',txt:'var(--green)'},
+    amber:{bg:'var(--amber-bg)',border:'var(--amber-border)',txt:'var(--amber)'},
+    red:  {bg:'var(--red-bg)',  border:'var(--red-border)',  txt:'var(--red)'}
+  };
+  var c=colors[color]||colors.green;
+  var msg=document.getElementById('garAlertMsg');
+  msg.style.background=c.bg;msg.style.borderColor=c.border;msg.style.color=c.txt;
+  msg.textContent=text;msg.style.display='block';
+  setTimeout(function(){msg.style.display='none';},8000);
 }
 
 // Event listeners (no inline handlers to avoid CSP issues)

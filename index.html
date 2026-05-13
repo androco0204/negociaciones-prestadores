@@ -788,7 +788,7 @@ function renderRegEmailInputs(){
     inp.addEventListener('focus',function(){this.style.borderColor='var(--accent)';});
     inp.addEventListener('blur', function(){this.style.borderColor='var(--border)';});
   });
-}}
+}
 
 function saveRegEmails(){
   var obj={};
@@ -801,7 +801,7 @@ function saveRegEmails(){
   var el=document.getElementById("regEmailsSaved");
   el.style.display="inline";
   setTimeout(function(){el.style.display="none";},2500);
-}}
+}
 
 function getRegEmails(){
   return JSON.parse(localStorage.getItem('neg_reg_emails')||'{}');

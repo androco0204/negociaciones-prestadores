@@ -262,11 +262,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
   <div class="hdr-divider"></div>
   <div class="hdr-tabs">
     <button class="htab active" data-panel="dashboard">Dashboard</button>
-    <button class="htab" data-panel="priorizacion">Priorizacion</button>
+    <button class="htab" data-panel="priorizacion">Priorizaci&#243;n</button>
     <button class="htab" data-panel="calendario">Calendario</button>
     <button class="htab" data-panel="alertas">Alertas</button>
     <button class="htab" data-panel="garantias">Garantias</button>
-    <button class="htab" data-panel="params">Parametros</button>
+    <button class="htab" data-panel="params">Par&#225;metros</button>
   </div>
   <div class="hdr-right">
     <div class="status-badge"><div class="dot-pulse"></div><span id="dataStatus">Cargando...</span></div>
@@ -299,9 +299,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
     <div class="kpi-grid" id="kpiGrid"></div>
     <div class="chart-grid">
       <div class="chart-card"><div class="chart-title">Prestadores por Regional</div><div id="chartRegional"></div></div>
-      <div class="chart-card"><div class="chart-title">Distribucion Estado Tarifas 2026</div><div id="chartEstado"></div></div>
+      <div class="chart-card"><div class="chart-title">Etapas del proceso de negociaci&#243;n 2026</div><div id="chartEstado"></div></div>
     </div>
-    <div class="chart-card"><div class="chart-title">Meses de Legalizacion Proyectados 2026</div><div id="chartMeses"></div></div>
+    <div class="chart-card"><div class="chart-title">Carga de negociaciones por mes de legalizaci&#243;n 2026</div><div id="chartMeses"></div></div>
   </div>
   <div class="panel" id="panel-priorizacion">
     <div class="prio-header">
@@ -375,7 +375,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
   </div>
 
   <div class="panel" id="panel-params">
-    <div class="section-hdr"><div><div class="section-title">Parametros de Priorizacion</div><div class="section-sub">Ajusta los pesos del score - deben sumar 100%</div></div></div>
+    <div class="section-hdr"><div><div class="section-title">Par&#225;metros de Priorizaci&#243;n</div><div class="section-sub">Ajusta los pesos del score - deben sumar 100%</div></div></div>
     <div class="params-grid">
       <div class="param-card"><div class="param-label">Facturacion</div><div class="param-desc">Peso segun facturacion total 2025</div><div class="param-row"><input type="range" class="param-slider" min="0" max="100" id="p-fact" value="35" oninput="updateParams()"><span class="param-val" id="pv-fact">35%</span></div></div>
       <div class="param-card"><div class="param-label">Estado Negociacion</div><div class="param-desc">Peso segun avance tarificacion 2026</div><div class="param-row"><input type="range" class="param-slider" min="0" max="100" id="p-est" value="25" oninput="updateParams()"><span class="param-val" id="pv-est">25%</span></div></div>
@@ -385,13 +385,24 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
     </div>
     <div class="params-total"><span class="params-total-label">Total pesos:</span><span class="params-total-val ok" id="paramsTotal">100%</span></div>
     <button class="btn-primary" id="btnApplyParams" style="margin-top:14px">Aplicar y Recalcular</button>
-    <div style="margin-top:24px">
-      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">Correos Autorizados</div>
+    <div style="margin-top:28px;border-top:1px solid var(--border);padding-top:20px">
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px">Correos Autorizados</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Usuarios con acceso a la herramienta. Un correo o dominio por l&#237;nea. Ej: @eps-sanitas.com.co</div>
       <div class="param-card" style="max-width:540px">
-        <div class="param-desc">Un correo o dominio por linea. Ej: @eps-sanitas.com.co o usuario@gmail.com</div>
-        <textarea id="allowedEmails" rows="6" style="width:100%;margin-top:8px;border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-family:var(--mono);font-size:11px;color:var(--text);background:var(--surface2);resize:vertical;outline:none"></textarea>
-        <button class="btn-primary" id="btnSaveEmails" style="margin-top:10px;padding:7px 18px;font-size:11px">Guardar lista</button>
-        <span id="emailsSaved" style="font-size:11px;color:var(--green);margin-left:10px;display:none">Lista actualizada</span>
+        <textarea id="allowedEmails" rows="5" style="width:100%;border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-family:var(--mono);font-size:11px;color:var(--text);background:var(--surface2);resize:vertical;outline:none"></textarea>
+        <button class="btn-primary" id="btnSaveEmails" style="margin-top:10px;padding:7px 18px;font-size:11px">Guardar</button>
+        <span id="emailsSaved" style="font-size:11px;color:var(--green);margin-left:10px;display:none">&#10003; Guardado</span>
+      </div>
+    </div>
+
+    <div style="margin-top:28px;border-top:1px solid var(--border);padding-top:20px">
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px">Correos de Alertas por Regional</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Destinatarios de las alertas autom&#225;ticas de garant&#237;as y negociaciones pendientes. Se guardan en el navegador.</div>
+      <div class="param-card" style="max-width:700px">
+        <div id="emailRegGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px"></div>
+        <button class="btn-primary" id="btnSaveRegEmails" style="padding:7px 18px;font-size:11px">Guardar correos</button>
+        <span id="regEmailsSaved" style="font-size:11px;color:var(--green);margin-left:10px;display:none">&#10003; Guardado</span>
+        <div style="font-size:10px;color:var(--text3);margin-top:8px">&#9432; Estos correos se usan cuando haces clic en "Enviar alertas". En el Apps Script tambien puedes configurar un trigger automatico semanal.</div>
       </div>
     </div>
   </div>
@@ -541,7 +552,17 @@ function uniqNorm(arr){
 }
 function fillSel(id,vals){
   var s=document.getElementById(id),prev=s.value;
-  s.innerHTML='<option value="">Todas</option>';
+  // Sort numerically if values start with numbers (e.g. "1. Sin iniciar")
+  if(id==='f-est'){
+    vals=vals.slice().sort(function(a,b){
+      var na=parseInt(a),nb=parseInt(b);
+      if(!isNaN(na)&&!isNaN(nb))return na-nb;
+      return a.localeCompare(b,'es');
+    });
+    s.innerHTML='<option value="">Todos</option>';
+  } else {
+    s.innerHTML='<option value="">Todas</option>';
+  }
   vals.forEach(function(v){var o=document.createElement('option');o.value=o.textContent=v;s.appendChild(o);});
   if(prev)s.value=prev;
 }
@@ -662,8 +683,24 @@ function renderAlertas(){
     var uc=x.dias<0?'urgent':x.dias<=30?'warning':'ok';
     var icon=x.dias<0?'&#128308;':x.dias<=30?'&#129505;':'&#128994;';
     var dt=x.dias<0?Math.abs(x.dias)+'d vencido':'+'+x.dias+'d restantes';
+    var color=x.dias<0?'var(--red)':x.dias<=30?'var(--amber)':'var(--green)';
     var pi=sortedPrio.findIndex(function(s){return s.r===x.r;});var di=pi>=0?pi:x.idx;
-    return '<div class="alert-item '+uc+'" data-idx="'+di+'"><div class="alert-icon">'+icon+'</div><div class="alert-info"><div class="alert-name">'+(x.r[I.NOMBRE]||'Sin nombre')+'</div><div class="alert-meta">'+(x.r[I.REGIONAL]||'--')+' - '+(x.r[I.TIPOPDET]||x.r[I.TIPO_PRIV]||'--')+' - Resp: '+(x.r[I.RESP26]||'--')+'</div></div>'+badge(x.r[I.EST26])+'<div class="alert-dias" style="color:'+(x.dias<0?'var(--red)':x.dias<=30?'var(--amber)':'var(--green)')+'">'+dt+'</div></div>';
+    return '<div class="alert-item '+uc+'" data-idx="'+di+'" style="align-items:flex-start">'+
+      '<div class="alert-icon" style="margin-top:2px">'+icon+'</div>'+
+      '<div class="alert-info" style="min-width:0">'+
+        '<div class="alert-name" style="white-space:normal;font-size:13px;line-height:1.3">'+(x.r[I.NOMBRE]||'Sin nombre')+'</div>'+
+        '<div style="font-size:11px;color:var(--text3);margin-top:4px">'+
+          '<span style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:1px 6px;margin-right:6px">'+(x.r[I.REGIONAL]||'--')+'</span>'+
+          '<span>'+(x.r[I.TIPOPDET]||x.r[I.TIPO_PRIV]||'--')+'</span>'+
+        '</div>'+
+        '<div style="font-size:11px;color:var(--text3);margin-top:3px">Resp: '+(x.r[I.RESP26]||'Sin asignar')+'</div>'+
+      '</div>'+
+      '<div style="flex-shrink:0;text-align:right;display:flex;flex-direction:column;gap:6px;align-items:flex-end">'+
+        badge(x.r[I.EST26])+
+        '<div style="font-family:var(--mono);font-size:13px;font-weight:800;color:'+color+'">'+dt+'</div>'+
+        '<div style="font-size:10px;color:var(--text3)">NIT: '+(x.r[I.NIT]||'--')+'</div>'+
+      '</div>'+
+    '</div>';
   }).join('');
 }
 
@@ -726,6 +763,41 @@ function applyParams(){
   renderAll();
 }
 
+
+
+// ── CORREOS REGIONALES en Parametros ─────────────────────
+var REG_LIST=['REGIONAL BOGOTA','REGIONAL MEDELLIN','REGIONAL CALI',
+              'REGIONAL BARRANQUILLA','REGIONAL BUCARAMANGA','REGIONAL CENTRO ORIENTE'];
+
+function renderRegEmailInputs(){
+  var saved=JSON.parse(localStorage.getItem('neg_reg_emails')||'{}');
+  var grid=document.getElementById('emailRegGrid');
+  if(!grid)return;
+  grid.innerHTML=REG_LIST.map(function(reg){
+    var key=reg.replace(/\s+/g,'_');
+    var val=saved[key]||'';
+    return '<div style="display:flex;flex-direction:column;gap:4px">'+
+      '<label style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">'+reg.replace('REGIONAL ','')+'</label>'+
+      '<input id="regemail_'+key+'" type="email" value="'+val+'" placeholder="coordinador@eps-sanitas.com.co" style="border:1.5px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-family:var(--sans);font-size:11px;color:var(--text);background:var(--surface2);outline:none;transition:border .15s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">'+
+    '</div>';
+  }).join('');
+}
+
+function saveRegEmails(){
+  var obj={};
+  REG_LIST.forEach(function(reg){
+    var key=reg.replace(/\s+/g,'_');
+    var el=document.getElementById('regemail_'+key);
+    if(el&&el.value.trim())obj[key]=el.value.trim();
+  });
+  localStorage.setItem('neg_reg_emails',JSON.stringify(obj));
+  var el=document.getElementById('regEmailsSaved');
+  el.style.display='inline';setTimeout(function(){el.style.display='none';},2500);
+}
+
+function getRegEmails(){
+  return JSON.parse(localStorage.getItem('neg_reg_emails')||'{}');
+}
 
 // ── GARANTIAS ─────────────────────────────────────────────
 var garRcData=[], garCumplData=[], garScriptUrlSaved='', garLoaded=false;
@@ -848,7 +920,8 @@ function sendGarAlerts(){
     btn.innerHTML='&#128231; Enviar alertas';btn.disabled=false;
     showGarMsg('red','Error al conectar. Verifica el despliegue del Apps Script.');
   };
-  s.src=API+'?action=sendAlerts&callback='+cb+'&t='+Date.now();
+  var regEmails=JSON.stringify(getRegEmails());
+  s.src=API+'?action=sendAlerts&emails='+encodeURIComponent(regEmails)+'&callback='+cb+'&t='+Date.now();
   document.head.appendChild(s);
 }
 
@@ -901,6 +974,16 @@ document.addEventListener('DOMContentLoaded',function(){
     if(gsa)gsa.addEventListener('click',sendGarAlerts);
   }
   addGarListeners();
+
+  document.getElementById('btnSaveRegEmails').addEventListener('click',saveRegEmails);
+
+  // Render regional email inputs when showing params panel
+  var origShowPanel=showPanel;
+  showPanel=function(id){
+    origShowPanel(id);
+    if(id==='params'){renderRegEmailInputs();}
+  };
+  window.showPanel=showPanel;
 
   var saved=sessionStorage.getItem('neg_user');
   if(saved&&isAllowed(saved)){currentUser=saved;document.getElementById('loginScreen').style.display='none';startApp();}

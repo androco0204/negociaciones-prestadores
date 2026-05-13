@@ -110,8 +110,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .bar-cnt{font-size:11px;color:var(--text3);font-family:var(--mono);margin-left:auto;flex-shrink:0}
 .bar-track{height:7px;background:var(--surface2);border-radius:4px;overflow:hidden}
 .bar-fill{height:100%;border-radius:4px;transition:width .7s}
-.donut-wrap{display:flex;align-items:center;gap:20px;justify-content:center;flex-wrap:wrap;padding:8px 0}
-.donut-legend{display:flex;flex-direction:column;gap:5px;max-height:220px;overflow-y:auto}
+.donut-wrap{display:flex;align-items:flex-start;gap:24px;padding:8px 0;flex-wrap:wrap}
+.donut-legend{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;align-content:start;max-height:none;overflow:visible}
 .legend-item{display:flex;align-items:center;gap:8px;font-size:11px;padding:2px 0}
 .legend-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
 .legend-label{color:var(--text2);flex:1}.legend-val{color:var(--text3);font-family:var(--mono);flex-shrink:0}
@@ -180,7 +180,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .gar-table th{background:var(--corp);color:rgba(255,255,255,.85);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:10px 12px;text-align:left;white-space:nowrap}
 .gar-table td{padding:10px 12px;border-top:1px solid var(--border2);font-size:12px;vertical-align:middle}
 .gar-table tr:hover td{background:var(--accent-lighter);cursor:pointer}
-.params-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:720px}
+.params-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;max-width:800px}
 .param-card{background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;box-shadow:var(--shadow-sm)}
 .param-label{font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px}
 .param-desc{font-size:10px;color:var(--text3);margin-bottom:14px;line-height:1.5}
@@ -299,7 +299,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
     <div class="kpi-grid" id="kpiGrid"></div>
     <div class="chart-grid">
       <div class="chart-card"><div class="chart-title">Prestadores por Regional</div><div id="chartRegional"></div></div>
-      <div class="chart-card"><div class="chart-title">Distribucion Estado Tarifas 2026</div><div class="donut-wrap" id="chartEstado"></div></div>
+      <div class="chart-card"><div class="chart-title">Distribucion Estado Tarifas 2026</div><div id="chartEstado"></div></div>
     </div>
     <div class="chart-card"><div class="chart-title">Meses de Legalizacion Proyectados 2026</div><div id="chartMeses"></div></div>
   </div>
@@ -376,11 +376,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
   <div class="panel" id="panel-params">
     <div class="section-hdr"><div><div class="section-title">Parametros de Priorizacion</div><div class="section-sub">Ajusta los pesos del score - deben sumar 100%</div></div></div>
     <div class="params-grid">
-      <div class="param-card"><div class="param-label">Facturacion</div><div class="param-desc">Peso segun facturacion total 2025</div><div class="param-row"><input type="range" class="param-slider" min="0" max="100" id="p-fact" value="35"><span class="param-val" id="pv-fact">35%</span></div></div>
-      <div class="param-card"><div class="param-label">Estado Negociacion</div><div class="param-desc">Peso segun avance tarificacion 2026</div><div class="param-row"><input type="range" class="param-slider" min="0" max="100" id="p-est" value="25"><span class="param-val" id="pv-est">25%</span></div></div>
-      <div class="param-card"><div class="param-label">Urgencia Vencimiento</div><div class="param-desc">Peso segun dias restantes de contrato</div><div class="param-row"><input type="range" class="param-slider" min="0" max="100" id="p-urg" value="20"><span class="param-val" id="pv-urg">20%</span></div></div>
-      <div class="param-card"><div class="param-label">Poblacion Afiliada</div><div class="param-desc">Peso segun afiliados atendidos</div><div class="param-row"><input type="range" class="param-slider" min="0" max="100" id="p-pob" value="10"><span class="param-val" id="pv-pob">10%</span></div></div>
-      <div class="param-card"><div class="param-label">Impacto Financiero</div><div class="param-desc">Peso segun impacto costo medico 2026</div><div class="param-row"><input type="range" class="param-slider" min="0" max="100" id="p-imp" value="10"><span class="param-val" id="pv-imp">10%</span></div></div>
+      <div class="param-card"><div class="param-label">Facturacion</div><div class="param-desc">Peso segun facturacion total 2025</div><div class="param-row"><input type="range" class="param-slider" min="0" max="100" id="p-fact" value="35" oninput="updateParams()"><span class="param-val" id="pv-fact">35%</span></div></div>
+      <div class="param-card"><div class="param-label">Estado Negociacion</div><div class="param-desc">Peso segun avance tarificacion 2026</div><div class="param-row"><input type="range" class="param-slider" min="0" max="100" id="p-est" value="25" oninput="updateParams()"><span class="param-val" id="pv-est">25%</span></div></div>
+      <div class="param-card"><div class="param-label">Urgencia Vencimiento</div><div class="param-desc">Peso segun dias restantes de contrato</div><div class="param-row"><input type="range" class="param-slider" min="0" max="100" id="p-urg" value="20" oninput="updateParams()"><span class="param-val" id="pv-urg">20%</span></div></div>
+      <div class="param-card"><div class="param-label">Poblacion Afiliada</div><div class="param-desc">Peso segun afiliados atendidos</div><div class="param-row"><input type="range" class="param-slider" min="0" max="100" id="p-pob" value="10" oninput="updateParams()"><span class="param-val" id="pv-pob">10%</span></div></div>
+      <div class="param-card"><div class="param-label">Impacto Financiero</div><div class="param-desc">Peso segun impacto costo medico 2026</div><div class="param-row"><input type="range" class="param-slider" min="0" max="100" id="p-imp" value="10" oninput="updateParams()"><span class="param-val" id="pv-imp">10%</span></div></div>
     </div>
     <div class="params-total"><span class="params-total-label">Total pesos:</span><span class="params-total-val ok" id="paramsTotal">100%</span></div>
     <button class="btn-primary" id="btnApplyParams" style="margin-top:14px">Aplicar y Recalcular</button>
@@ -519,7 +519,25 @@ function initRanges(){
   mxP=ps.length?Math.max.apply(null,ps):1;
 }
 
-function uniq(arr){return arr.filter(Boolean).map(function(x){return String(x).trim();}).filter(function(v,i,a){return a.indexOf(v)===i;}).sort();}
+function uniq(arr){
+  var seen={};
+  return arr.filter(Boolean).map(function(x){return String(x).trim();}).filter(function(v){
+    var k=v.toUpperCase();
+    if(seen[k])return false;
+    seen[k]=v;return true;
+  }).sort(function(a,b){return a.localeCompare(b,'es');});
+}
+function uniqNorm(arr){
+  // Normaliza a Title Case y deduplica sin importar mayusculas
+  var seen={};
+  var result=[];
+  arr.filter(Boolean).forEach(function(x){
+    var s=String(x).trim();
+    var k=s.toUpperCase();
+    if(!seen[k]){seen[k]=true;result.push(s.toUpperCase());}
+  });
+  return result.sort(function(a,b){return a.localeCompare(b,'es');});
+}
 function fillSel(id,vals){
   var s=document.getElementById(id),prev=s.value;
   s.innerHTML='<option value="">Todas</option>';
@@ -527,7 +545,7 @@ function fillSel(id,vals){
   if(prev)s.value=prev;
 }
 function populateFilters(){
-  fillSel('f-reg',uniq(rawData.map(function(r){return r[I.REGIONAL];})));
+  fillSel('f-reg',uniqNorm(rawData.map(function(r){return r[I.REGIONAL];})));
   fillSel('f-est',uniq(rawData.map(function(r){return r[I.EST26];})));
   fillSel('f-tipo',uniq(rawData.map(function(r){return r[I.TIPOPDET]||r[I.TIPO_PRIV];})));
   fillSel('f-resp',uniq(rawData.map(function(r){return r[I.RESP26];})));
@@ -542,7 +560,7 @@ function applyFilters(){
   var tipo=document.getElementById('f-tipo').value,resp=document.getElementById('f-resp').value;
   var mes=document.getElementById('f-mes').value;
   filteredData=rawData.filter(function(r){
-    if(reg&&String(r[I.REGIONAL]||'').trim()!==reg)return false;
+    if(reg&&String(r[I.REGIONAL]||'').trim().toUpperCase()!==reg)return false;
     if(est&&String(r[I.EST26]||'').trim()!==est)return false;
     if(tipo&&String(r[I.TIPOPDET]||r[I.TIPO_PRIV]||'').trim()!==tipo)return false;
     if(resp&&String(r[I.RESP26]||'').trim()!==resp)return false;
@@ -583,7 +601,23 @@ function renderDashboard(){
   var totE=estE.reduce(function(s,e){return s+e[1];},0)||1;
   var paths='',off=0,r2=44,cx=55,cy=55,sw=24,ci=2*Math.PI*r2;
   estE.forEach(function(e,i){var p=e[1]/totE,da=p*ci,ga=ci-da;paths+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r2+'" fill="none" stroke="'+eC[i%eC.length]+'" stroke-width="'+sw+'" stroke-dasharray="'+da.toFixed(2)+' '+ga.toFixed(2)+'" stroke-dashoffset="'+((-off)*ci).toFixed(2)+'" transform="rotate(-90 '+cx+' '+cy+')"/>';off+=p;});
-  document.getElementById('chartEstado').innerHTML='<svg width="110" height="110" viewBox="0 0 110 110"><circle cx="55" cy="55" r="44" fill="none" stroke="#eef2f6" stroke-width="24"/>'+paths+'<text x="55" y="51" text-anchor="middle" fill="var(--text)" font-size="15" font-weight="800" font-family="Figtree">'+totE.toLocaleString('es-CO')+'</text><text x="55" y="63" text-anchor="middle" fill="var(--text3)" font-size="8" font-family="Figtree">Total</text></svg><div class="donut-legend">'+estE.map(function(e,i){return '<div class="legend-item"><div class="legend-dot" style="background:'+eC[i%eC.length]+'"></div><span class="legend-label">'+e[0]+'</span><span class="legend-val">'+e[1]+'</span></div>';}).join('')+'</div>';
+  document.getElementById('chartEstado').innerHTML=
+  '<div style="display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap">'+
+  '<svg style="flex-shrink:0" width="110" height="110" viewBox="0 0 110 110">'+
+  '<circle cx="55" cy="55" r="44" fill="none" stroke="#eef2f6" stroke-width="24"/>'+
+  paths+
+  '<text x="55" y="51" text-anchor="middle" fill="var(--text)" font-size="15" font-weight="800" font-family="Figtree">'+totE.toLocaleString('es-CO')+'</text>'+
+  '<text x="55" y="63" text-anchor="middle" fill="var(--text3)" font-size="8" font-family="Figtree">Total</text>'+
+  '</svg>'+
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px 20px;align-content:start;flex:1;min-width:180px">'+
+  estE.map(function(e,i){
+    return '<div style="display:flex;align-items:center;gap:7px;font-size:11px;padding:2px 0">'+
+      '<div style="width:9px;height:9px;border-radius:50%;flex-shrink:0;background:'+eC[i%eC.length]+'"></div>'+
+      '<span style="color:var(--text2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+e[0]+'">'+e[0]+'</span>'+
+      '<span style="color:var(--text3);font-family:var(--mono);flex-shrink:0;margin-left:4px">'+e[1]+'</span>'+
+    '</div>';
+  }).join('')+
+  '</div></div>';
   var mC={};d.forEach(function(r){var m=Number(r[I.MESLEG26]);if(m>=1&&m<=12)mC[m]=(mC[m]||0)+1;});
   var mArr=Array.from({length:12},function(_,i){return [i+1,mC[i+1]||0];});
   var mxM=Math.max.apply(null,mArr.map(function(e){return e[1];}));mxM=mxM||1;
@@ -742,7 +776,7 @@ function renderGarTable(){
   var alerta=document.getElementById('garAlertFilter').value;
   function applyFilters(arr){
     return arr.filter(function(p){
-      if(reg&&p.regional!==reg)return false;
+      if(reg&&p.regional.toUpperCase()!==reg)return false;
       if(alerta&&p.alerta!==alerta)return false;
       return true;
     });
@@ -829,6 +863,11 @@ function showGarMsg(color,text){
   msg.textContent=text;msg.style.display='block';
   setTimeout(function(){msg.style.display='none';},8000);
 }
+
+// Expose functions needed by inline handlers
+window.updateParams=updateParams;
+window.applyParams=applyParams;
+window.saveAllowedEmails=saveAllowedEmails;
 
 // Event listeners (no inline handlers to avoid CSP issues)
 document.addEventListener('DOMContentLoaded',function(){

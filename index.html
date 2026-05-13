@@ -792,15 +792,16 @@ function renderRegEmailInputs(){
 
 function saveRegEmails(){
   var obj={};
-  var inputs=document.querySelectorAll('.reg-email-input');
+  var inputs=document.querySelectorAll(".reg-email-input");
   inputs.forEach(function(el){
     var key=el.dataset.key;
     if(key&&el.value.trim())obj[key]=el.value.trim();
   });
-  localStorage.setItem('neg_reg_emails',JSON.stringify(obj));
-  var el=document.getElementById('regEmailsSaved');
-  el.style.display='inline';setTimeout(function(){el.style.display='none';},2500);
-}
+  localStorage.setItem("neg_reg_emails",JSON.stringify(obj));
+  var el=document.getElementById("regEmailsSaved");
+  el.style.display="inline";
+  setTimeout(function(){el.style.display="none";},2500);
+}}
 
 function getRegEmails(){
   return JSON.parse(localStorage.getItem('neg_reg_emails')||'{}');

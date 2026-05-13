@@ -208,7 +208,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
   <path d="M21 22 Q31 10 37 15 Q33 22 21 22Z" fill="#0099D1" opacity=".9"/>
   <path d="M21 22 Q33 30 35 36 Q29 34 21 22Z" fill="#0099D1" opacity=".65"/>
   <ellipse cx="20" cy="22" rx="1.8" ry="5" fill="#002034"/>
-  <text x="40" y="18" font-family="Figtree,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF">EPS</text>
+  <text x="40" y="18" font-family="Figtree,sans-serif" font-size="10" font-weight="700" fill="#003D53">EPS</text>
   <text x="40" y="36" font-family="Figtree,sans-serif" font-size="14" font-weight="600" fill="#0099D1">Sanitas</text>
 </svg></div>
     <div class="login-title">Negociaciones 2026</div>
@@ -773,22 +773,29 @@ function renderRegEmailInputs(){
   var saved=JSON.parse(localStorage.getItem('neg_reg_emails')||'{}');
   var grid=document.getElementById('emailRegGrid');
   if(!grid)return;
-  grid.innerHTML=REG_LIST.map(function(reg){
+  var html='';
+  REG_LIST.forEach(function(reg){
     var key=reg.replace(/\s+/g,'_');
     var val=saved[key]||'';
-    return '<div style="display:flex;flex-direction:column;gap:4px">'+
-      '<label style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">'+reg.replace('REGIONAL ','')+'</label>'+
-      '<input id="regemail_'+key+'" type="email" value="'+val+'" placeholder="coordinador@eps-sanitas.com.co" style="border:1.5px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-family:var(--sans);font-size:11px;color:var(--text);background:var(--surface2);outline:none;transition:border .15s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">'+
-    '</div>';
-  }).join('');
-}
+    html+='<div style="display:flex;flex-direction:column;gap:4px">';
+    html+='<label style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">'+reg.replace('REGIONAL ','')+'</label>';
+    html+='<input class="reg-email-input" data-key="'+key+'" type="email" value="'+val+'" placeholder="coordinador@eps-sanitas.com.co" style="border:1.5px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-family:var(--sans);font-size:11px;color:var(--text);background:var(--surface2);outline:none">';
+    html+='</div>';
+  });
+  grid.innerHTML=html;
+  // Focus/blur handlers via JS (no inline)
+  grid.querySelectorAll('.reg-email-input').forEach(function(inp){
+    inp.addEventListener('focus',function(){this.style.borderColor='var(--accent)';});
+    inp.addEventListener('blur', function(){this.style.borderColor='var(--border)';});
+  });
+}}
 
 function saveRegEmails(){
   var obj={};
-  REG_LIST.forEach(function(reg){
-    var key=reg.replace(/\s+/g,'_');
-    var el=document.getElementById('regemail_'+key);
-    if(el&&el.value.trim())obj[key]=el.value.trim();
+  var inputs=document.querySelectorAll('.reg-email-input');
+  inputs.forEach(function(el){
+    var key=el.dataset.key;
+    if(key&&el.value.trim())obj[key]=el.value.trim();
   });
   localStorage.setItem('neg_reg_emails',JSON.stringify(obj));
   var el=document.getElementById('regEmailsSaved');
